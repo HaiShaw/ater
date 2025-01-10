@@ -5,6 +5,7 @@
 #include <ATen/ATen.h>
 #include <THC/THCAtomics.cuh>
 
+#include "py_itfs_common.h"
 #include "hip_compat.h"
 #include "dispatch_utils.h"
 #include "fused_moe.hpp"

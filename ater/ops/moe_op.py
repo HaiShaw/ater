@@ -13,6 +13,7 @@ compile_ops_ = {
         f"{ATER_CSRC_DIR}/kernels/moe_fused_experts_ck.cu",
         f"{ATER_CSRC_DIR}/py_itfs_cu/asm_fmoe.cpp",
         f"{CK_DIR}/example/ck_tile/15_fused_moe/",
+        f"{CK_DIR}/example/ck_tile/15_fused_moe/instances",
     ],
     "extra_include": [
         f"{CK_DIR}/example/ck_tile/15_fused_moe/",
