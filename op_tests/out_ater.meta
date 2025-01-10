@@ -1,0 +1,2 @@
+torch.Size([128, 8, 128])
+torch.bfloat16
