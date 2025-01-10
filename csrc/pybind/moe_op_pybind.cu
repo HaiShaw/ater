@@ -11,4 +11,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
       m.def("fmoe_int8_g1u0", &fmoe_int8_g1u0);
       m.def("fmoe_int8_g1u0_a16", &fmoe_int8_g1u0_a16);
       m.def("moe_sum", &moe_sum, "moe_sum(Tensor! input, Tensor output) -> ()");
+      m.def("moe_fused_experts_ck", &moe_fused_experts_ck, "MOE implementation by ck");
 }

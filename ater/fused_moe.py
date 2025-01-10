@@ -3,6 +3,7 @@ import functools
 import json
 import os
 from typing import Any, Callable, Dict, Optional, Tuple
+import math
 
 import torch
 import triton
@@ -907,3 +908,62 @@ def fused_moe(
                          w2_scale=w2_scale,
                          a1_scale=a1_scale,
                          a2_scale=a2_scale)
+
+def fused_experts_ck(
+    hidden_states: torch.Tensor,
+    w1: torch.Tensor,
+    w2: torch.Tensor,
+    topk_weights: torch.Tensor,
+    topk_ids: torch.Tensor,
+    use_fp8_w8a8: bool = False,
+    use_int8_w8a16: bool = False,
+    w1_scale: Optional[torch.Tensor] = None,
+    w2_scale: Optional[torch.Tensor] = None,
+    a1_scale: Optional[torch.Tensor] = None,
+    a2_scale: Optional[torch.Tensor] = None,
+):
+
+    block_m = 32
+    tokens = hidden_states.shape[0]
+    experts = w1.shape[0]
+
+    topk = topk_ids.shape[1]
+
+    out_hidden_states = torch.empty_like(hidden_states)
+    max_num_tokens_padded = topk * tokens + experts * block_m - topk
+
+    sorted_token_ids = torch.empty(
+        (max_num_tokens_padded,), dtype=torch.int32, device=topk_ids.device
+    )
+    sorted_weight = torch.empty(
+        (max_num_tokens_padded,), dtype=topk_weights.dtype, device=topk_ids.device
+    )
+    
+    max_num_m_blocks = math.floor((max_num_tokens_padded + block_m - 1) / block_m)
+
+    sorted_expert_ids = torch.empty(
+        (max_num_m_blocks,), dtype=torch.int32, device=topk_ids.device
+    )
+
+    num_tokens_post_pad = torch.empty((1), dtype=torch.int32, device=topk_ids.device)
+
+    moe_kernels.moe_fused_experts_ck(
+        hidden_states,
+        w1,
+        w2,
+        topk_weights,
+        topk_ids,
+        w1_scale,
+        w2_scale,
+        a1_scale,
+        a2_scale,
+        sorted_token_ids,
+        sorted_weight,
+        sorted_expert_ids,
+        num_tokens_post_pad,
+        out_hidden_states,
+        32,
+        (use_fp8_w8a8 or use_int8_w8a16),
+        0)
+
+    return out_hidden_states

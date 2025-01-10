@@ -140,7 +140,7 @@ def torch_moe_test(hidden_states, w1, w2, topk_weight, topk_ids,
 
 
 @perftest()
-def asm_moe_test(hidden_states, w1, w2, topk_weight, topk_ids,
+def ck_moe_test(hidden_states, w1, w2, topk_weight, topk_ids,
                  # following for int8 quant
                  fc1_scale=None,  # [expert, inter_dim, 1]
                  fc2_scale=None,  # [expert, model_dim, 1]
@@ -196,57 +196,7 @@ def test_fmoe(dtype, token, model_dim, inter_dim, E, topk, quant=False):
     # b implement
     w1b = shuffle_weight(w1)
     w2b = shuffle_weight(w2)
-    out_b, avg_b = asm_moe_test(input, w1b, w2b, topk_weights, topk_ids)
-    # if not quant:
-    #     # ref2 implement
-    #     ref2, avg_c = torch_moe_test(input,
-    #                                  w1,
-    #                                  w2,
-    #                                  topk_weights,
-    #                                  topk_ids)
-    #     # print(f'{ref2=}')
-
-    #     # b implement
-    #     w1b = shuffle_weight(w1)
-    #     w2b = shuffle_weight(w2)
-    #     out_b, avg_b = asm_moe_test(input, w1b, w2b, topk_weights, topk_ids)
-    #     # print(f'{out_b=}')
-    # else:
-    #     w1, fc1_scale = pertoken_quant(w1, torch.float)
-    #     w2, fc2_scale = pertoken_quant(w2, torch.float)
-
-    #     sp1 = (E, inter_dim)
-    #     sp2 = (E, model_dim)
-    #     # [expert, 1, model_dim]
-    #     fc1_smooth_scale = torch.randn(sp2, dtype=torch.float, device="cuda")
-    #     # [expert, 1, inter_dim]
-    #     fc2_smooth_scale = torch.randn(sp1, dtype=torch.float, device="cuda")
-
-    #     # ref2 implement
-    #     ref2, avg_c = torch_moe_test(input,
-    #                                  w1,
-    #                                  w2,
-    #                                  topk_weights,
-    #                                  topk_ids, fc1_scale, fc2_scale, fc1_smooth_scale, fc2_smooth_scale)
-    #     # print(f'{ref2=}')
-
-    #     # b implement
-    #     w1b = shuffle_weight(w1)
-    #     w2b = shuffle_weight(w2)
-    #     out_b, avg_b = asm_moe_test(input, w1b, w2b, topk_weights, topk_ids,
-    #                                 fc1_scale, fc2_scale, fc1_smooth_scale, fc2_smooth_scale)
-    #     # print(f'{out_b=}')
-    #     out_b2, avg_b2 = asm_moe_test(input, w1b, w2b, topk_weights, topk_ids,
-    #                                   fc1_scale, fc2_scale, fc1_smooth_scale, fc2_smooth_scale, a16=True)
-    #     # print(f'{out_c=}')
-    #     msg = f'asm: {avg_b:.2f} vs fuseQuant: {avg_b2:.2f}'
-    #     checkAllclose(out_b, out_b2, atol=100, msg=msg)
-
-    # msg = f"[perf] {token=}, {model_dim=}, {inter_dim=}, {E=}, {topk=}, dtype: {dtype}, torch_avg: {avg_a:<8.2f} us, asm_avg: {avg_b2:<8.2f} us,smtorch_k_avg: {avg_c:.2f} us, uplift: {avg_c/avg_b2-1:.1%}"
-    # # checkAllclose(ref1, ref2, rtol=0.05, atol=20)
-    # checkAllclose(ref2, out_b2, rtol=0.01, atol=100, msg=msg)
-
-
+    out_b, avg_b = ck_moe_test(input, w1b, w2b, topk_weights, topk_ids)
 print('test test_fmoe 16 bit')
 for dtype in [torch.float16, torch.bfloat16][1:]:
     for m in [1, 2, 4, 8, 16, 26, 32, 64, 128, 160, 192, 224, 256][-5:-4]:
