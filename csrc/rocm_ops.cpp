@@ -78,6 +78,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
       // ck staff start
       m.def("moe_smoothquant_fwd", &moe_smoothquant_fwd);
       m.def("moe_sorting_fwd", &moe_sorting_fwd);
+      m.def("moe_fused_experts_ck", &moe_fused_experts_ck, "MOE implementation by ck");
       m.def("pa_fwd_naive", &pa_fwd_naive, "pa_fwd_naive",
             py::arg("Q"),
             py::arg("K"),

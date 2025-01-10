@@ -10,7 +10,12 @@ compile_ops_ = {
         f"{ATER_CSRC_DIR}/pybind/moe_op_pybind.cu",
         f"{ATER_CSRC_DIR}/kernels/topk_softmax_kernels.cu",
         f"{ATER_CSRC_DIR}/kernels/moe_align_block_size_kernels.cu",
+        f"{ATER_CSRC_DIR}/kernels/moe_fused_experts_ck.cu",
         f"{ATER_CSRC_DIR}/py_itfs_cu/asm_fmoe.cpp",
+        f"{CK_DIR}/example/ck_tile/15_fused_moe/",
+    ],
+    "extra_include": [
+        f"{CK_DIR}/example/ck_tile/15_fused_moe/",
     ],
     "flags_extra_hip": [f'-DATER_ASM_DIR=\\"{ATER_ROOT_DIR}/hsa/\\"'],
     "md_name": MD_NAME,
@@ -90,4 +95,25 @@ def fmoe_int8_g1u0_a16(
     fc2_scale: Tensor,
     fc1_smooth_scale: Tensor,
     fc2_smooth_scale: Tensor,
+): ...
+
+@compile_ops(**compile_ops_)
+def moe_fused_experts_ck(
+    hidden_states: Tensor,
+    w1: Tensor,
+    w2: Tensor,
+    topk_weights: Tensor,
+    topk_ids: Tensor,
+    w1_scale: Tensor,
+    w2_scale: Tensor,
+    a1_scale: Tensor,
+    a2_scale: Tensor,
+    sorted_ids: Tensor,
+    sorted_weights: Tensor,
+    sorted_expert_ids: Tensor,
+    num_tokens_post_pad: Tensor,
+    out: Tensor,
+    block_m: int,
+    fused_qunt: int,
+    gate_only: int,
 ): ...

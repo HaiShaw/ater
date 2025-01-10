@@ -133,6 +133,7 @@ if IS_ROCM:
                 f"{blob_dir}",
                 f"{ck_dir}/example/ck_tile/13_moe_sorting/",
                 f"{ck_dir}/example/ck_tile/14_moe_smoothquant/instances/",
+                f"{ck_dir}/example/ck_tile/15_fused_moe/instances",
             ])
         extra_compile_args = {
             "cxx": ["-O3", "-std=c++17"] + generator_flag,
@@ -156,6 +157,7 @@ if IS_ROCM:
             f"{ck_dir}/library/include",
             f"{ck_dir}/example/ck_tile/13_moe_sorting",
             f"{ck_dir}/example/ck_tile/14_moe_smoothquant",
+            f"{ck_dir}/example/ck_tile/15_fused_moe",
         ]
         ext_modules.append(
             CUDAExtension(

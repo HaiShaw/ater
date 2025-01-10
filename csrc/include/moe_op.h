@@ -55,3 +55,14 @@ void fmoe_int8_g1u0_a16(torch::Tensor &out,                    // [token_cnt, di
 );
 
 void moe_sum(torch::Tensor &input, torch::Tensor &output);
+
+void moe_fused_experts_ck(torch::Tensor &hidden_states, torch::Tensor &w1, torch::Tensor &w2,
+                          torch::Tensor &topk_weights, torch::Tensor &topk_ids,
+                          at::optional<torch::Tensor> w1_scale,
+                          at::optional<torch::Tensor> w2_scale,
+                          at::optional<torch::Tensor> a1_scale,
+                          at::optional<torch::Tensor> a2_scale,
+                          torch::Tensor &sorted_ids, torch::Tensor &sorted_weights,
+                          torch::Tensor &sorted_expert_ids, torch::Tensor &num_tokens_post_pad,
+                          torch::Tensor &out, int block_m, int fused_quant, int gate_only);
+
