@@ -14,6 +14,9 @@
 #include "transpose_operator.h"
 #include "asm_gemm_a8w8.h"
 #include <torch/extension.h>
+#ifdef USE_CK_A8W8
+#include "gemm_a8w8.h"
+#endif
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
 {
@@ -23,6 +26,14 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
             "Aligning the number of tokens to be processed by each expert such "
             "that it is divisible by the block size.");
       m.def("silu_and_mul", &silu_and_mul, "Activation function used in SwiGLU.");
+      m.def("rms_norm", &rms_norm, "Apply Root Mean Square (RMS) Normalization to the input tensor.");
+      m.def("fused_add_rms_norm", &fused_add_rms_norm, "In-place fused Add and RMS Normalization");
+      m.def("wvSpltK", &wvSpltK, "wvSpltK(Tensor in_a, Tensor in_b, Tensor! out_c, int N_in,"
+                                 "        int CuCount) -> ()");
+      m.def("LLMM1", &LLMM1, "LLMM1(Tensor in_a, Tensor in_b, Tensor! out_c, int rows_per_block) -> "
+                             "()");
+      m.def("rotary_embedding_fwd", &rotary_embedding, "rotary_embedding");
+      m.def("batched_rotary_embedding", &batched_rotary_embedding, "batched_rotary_embedding");
       m.def("moe_sum", &moe_sum, "moe_sum(Tensor! input, Tensor output) -> ()");
       m.def("paged_attention_rocm", &paged_attention,
             "paged_attention_rocm(Tensor! out, Tensor exp_sums,"
@@ -35,6 +46,11 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
             "                Tensor? alibi_slopes,"
             "                str kv_cache_dtype,"
             "                float k_scale, float v_scale) -> ()");
+#ifdef USE_CK_A8W8
+      m.def("gemm_a8w8", &gemm_a8w8, "gemm_a8w8", py::arg("XQ"), py::arg("WQ"),
+            py::arg("x_scale"), py::arg("w_scale"), py::arg("Out"), 
+            py::arg("bias") = std::nullopt, py::arg("splitK") = 0);
+#endif
       m.def("swap_blocks", &swap_blocks,
             "swap_blocks(Tensor src, Tensor! dst, Tensor block_mapping) -> ()");
       m.def("copy_blocks", &copy_blocks,
@@ -63,6 +79,17 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
             "convert_fp8(Tensor! dst_cache, Tensor src_cache, float scale, "
             "str kv_cache_dtype) -> ()");
 
+      // Custom all-reduce kernels
+      m.def("init_custom_ar", &init_custom_ar,
+            "init_custom_ar(Tensor meta, Tensor rank_data, "
+            "str[] handles, int[] offsets, int rank, "
+            "bool full_nvlink) -> int");
+
+      m.def("all_reduce_reg", &all_reduce_reg, "all_reduce_reg(int fa, Tensor inp, Tensor! out) -> ()");
+
+      m.def("all_reduce_unreg", &all_reduce_unreg,
+            "all_reduce_unreg(int fa, Tensor inp, Tensor reg_buffer, Tensor! out) -> "
+            "()");
 
       m.def("dispose", &dispose);
       m.def("meta_size", &meta_size);
@@ -73,12 +100,22 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
 
       m.def("get_graph_buffer_ipc_meta", &get_graph_buffer_ipc_meta);
       m.def("register_graph_buffers", &register_graph_buffers);
+#ifdef USE_ROCM
+      m.def("allocate_meta_buffer", &allocate_meta_buffer);
+      m.def("get_meta_buffer_ipc_handle", &get_meta_buffer_ipc_handle);
+#endif
 
 #if defined(FIND_CK)
       // ck staff start
+      m.def("layernorm2d_fwd", &layernorm2d);
+      m.def("layernorm2d_fwd_with_add", &layernorm2d_with_add);
+      m.def("layernorm2d_fwd_with_smoothquant", &layernorm2d_with_smoothquant);
+      m.def("layernorm2d_fwd_with_add_smoothquant", &layernorm2d_with_add_smoothquant);
+      m.def("layernorm2d_fwd_with_dynamicquant", &layernorm2d_with_dynamicquant);
+      m.def("layernorm2d_fwd_with_add_dynamicquant", &layernorm2d_with_add_dynamicquant);
+      m.def("smoothquant_fwd", &smoothquant_fwd);
       m.def("moe_smoothquant_fwd", &moe_smoothquant_fwd);
       m.def("moe_sorting_fwd", &moe_sorting_fwd);
-      m.def("moe_fused_experts_ck", &moe_fused_experts_ck, "MOE implementation by ck");
       m.def("pa_fwd_naive", &pa_fwd_naive, "pa_fwd_naive",
             py::arg("Q"),
             py::arg("K"),
@@ -111,7 +148,8 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
             py::arg("block_tables"),
             py::arg("context_lens"),
             py::arg("K_QScale") = std::nullopt,
-            py::arg("V_QScale") = std::nullopt);
+            py::arg("V_QScale") = std::nullopt,
+            py::arg("out_") = std::nullopt);
       m.def("gemm_a8w8_asm", &gemm_a8w8_asm,
             "Asm gemm a8w8 ,  weight should be shuffle to layout(32,16)",
             py::arg("XQ"), py::arg("WQ"),
