@@ -17,7 +17,6 @@ torch::Tensor pa_fwd_naive(torch::Tensor &Q, //   [num_seqs, num_heads, head_siz
                            const float scale_k,
                            const float scale_v,
                            const int block_size,
-                           const int quant_algo,
-                           std::optional<torch::Tensor> &out_
+                           const int quant_algo
                            // above are input
 );
