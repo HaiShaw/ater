@@ -144,6 +144,7 @@ if IS_ROCM:
                     "-DENABLE_FP8",
                     "-D__HIP_PLATFORM_HCC__=1",
                     "-D__HIP_PLATFORM_AMD__=1",
+                    "-DLEGACY_HIPBLAS_DIRECT",
                     "-U__HIP_NO_HALF_CONVERSIONS__",
                     "-U__HIP_NO_HALF_OPERATORS__",
             ]
